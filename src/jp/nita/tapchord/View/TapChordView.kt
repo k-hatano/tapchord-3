@@ -1,4 +1,4 @@
-package jp.nita.tapchord
+package jp.nita.tapchord.View
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
@@ -12,7 +12,7 @@ import android.os.Handler
 import android.os.Vibrator
 import android.util.AttributeSet
 import android.util.Log
-import android.util.SparseIntArray
+import android.util.SparseArray
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
@@ -21,47 +21,51 @@ import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
-import jp.nita.tapchord.Shape.Companion.maxLifetime
-import jp.nita.tapchord.Statics.RectFToRect
-import jp.nita.tapchord.Statics.color
-import jp.nita.tapchord.Statics.convertNotesToNotesInRange
-import jp.nita.tapchord.Statics.notesOfChord
-import jp.nita.tapchord.Statics.pointOfButton
-import jp.nita.tapchord.Statics.preferenceValue
-import jp.nita.tapchord.Statics.radiusOfButton
-import jp.nita.tapchord.Statics.rectOfButton
-import jp.nita.tapchord.Statics.rectOfButtonArea
-import jp.nita.tapchord.Statics.rectOfKeyboardIndicator
-import jp.nita.tapchord.Statics.rectOfKeyboardIndicators
-import jp.nita.tapchord.Statics.rectOfScrollBar
-import jp.nita.tapchord.Statics.rectOfScrollNob
-import jp.nita.tapchord.Statics.rectOfStatusBar
-import jp.nita.tapchord.Statics.rectOfStatusBarButton
-import jp.nita.tapchord.Statics.rectOfToolbar
-import jp.nita.tapchord.Statics.rectOfToolbarButton
-import jp.nita.tapchord.Statics.rectOfToolbarTransposingButton
-import jp.nita.tapchord.Statics.scrollMax
-import jp.nita.tapchord.Statics.setPreferenceValue
-import jp.nita.tapchord.Statics.stringOfScale
-import jp.nita.tapchord.Statics.stringOfSoundRange
-import jp.nita.tapchord.Statics.valueOfWaveform
+import jp.nita.tapchord.Activity.MainActivity
+import jp.nita.tapchord.Activity.SettingsActivity
+import jp.nita.tapchord.Model.Shape
+import jp.nita.tapchord.Model.Shape.Companion.maxLifetime
+import jp.nita.tapchord.Model.Sound
+import jp.nita.tapchord.R
+import jp.nita.tapchord.Util.Dimensions.RectFToRect
+import jp.nita.tapchord.Util.Dimensions.pointOfButton
+import jp.nita.tapchord.Util.Dimensions.radiusOfButton
+import jp.nita.tapchord.Util.Dimensions.rectOfButton
+import jp.nita.tapchord.Util.Dimensions.rectOfButtonArea
+import jp.nita.tapchord.Util.Dimensions.rectOfKeyboardIndicator
+import jp.nita.tapchord.Util.Dimensions.rectOfKeyboardIndicators
+import jp.nita.tapchord.Util.Dimensions.rectOfScrollBar
+import jp.nita.tapchord.Util.Dimensions.rectOfScrollNob
+import jp.nita.tapchord.Util.Dimensions.rectOfStatusBar
+import jp.nita.tapchord.Util.Dimensions.rectOfStatusBarButton
+import jp.nita.tapchord.Util.Dimensions.rectOfToolbar
+import jp.nita.tapchord.Util.Dimensions.rectOfToolbarButton
+import jp.nita.tapchord.Util.Dimensions.rectOfToolbarTransposingButton
+import jp.nita.tapchord.Util.Dimensions.scrollMax
+import jp.nita.tapchord.Util.Statics
+import jp.nita.tapchord.Util.Statics.color
+import jp.nita.tapchord.Util.Statics.convertNotesToNotesInRange
+import jp.nita.tapchord.Util.Statics.notesOfChord
+import jp.nita.tapchord.Util.Statics.prefValue
+import jp.nita.tapchord.Util.Statics.setPrefValue
+import jp.nita.tapchord.Util.Statics.stringOfScale
+import jp.nita.tapchord.Util.Statics.stringOfSoundRange
+import jp.nita.tapchord.Util.Statics.valueOfWaveform
 import java.util.*
 
 class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
     var mWidth = 0
     var mHeight = 0
-    var mOriginalX = 0
-    var mOriginalY = 0
+    var mOriginalIndices: Pair<Int, Int> = Pair(0, 0)
     var mOriginalScroll = 0
-    var mSituation: Int
-    var mDestination: Int
+    var mSituation: Statics.SITUATION
+    var mDestination: Statics.SITUATION
     var mStep: Int
     var mScroll: Int
     var mUpper: Int
     var mDestinationScale = 0
-    var mPlaying: Int
-    var mPlayingX = 0
-    var mPlayingY = 0
+    private var mPlaying: Int
+    var mPlayingIndices: Pair<Int, Int> = Pair(0, 0)
     var mTappedX = 0
     var mDestinationScroll = 0
     var mPlayingID = 0
@@ -73,7 +77,21 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
     var mStatusBarFlags = intArrayOf(0, 0, 0, 0)
 
     val STATUSBAR_KEY_CODES = intArrayOf(KeyEvent.KEYCODE_1, KeyEvent.KEYCODE_2, KeyEvent.KEYCODE_3, KeyEvent.KEYCODE_4)
-    val KEY_CODES = arrayOf(intArrayOf(0, 0, 0), intArrayOf(0, 0, 0), intArrayOf(KeyEvent.KEYCODE_Q, KeyEvent.KEYCODE_A, KeyEvent.KEYCODE_Z), intArrayOf(KeyEvent.KEYCODE_W, KeyEvent.KEYCODE_S, KeyEvent.KEYCODE_X), intArrayOf(KeyEvent.KEYCODE_E, KeyEvent.KEYCODE_D, KeyEvent.KEYCODE_C), intArrayOf(KeyEvent.KEYCODE_R, KeyEvent.KEYCODE_F, KeyEvent.KEYCODE_V), intArrayOf(KeyEvent.KEYCODE_T, KeyEvent.KEYCODE_G, KeyEvent.KEYCODE_B), intArrayOf(KeyEvent.KEYCODE_Y, KeyEvent.KEYCODE_H, KeyEvent.KEYCODE_N), intArrayOf(KeyEvent.KEYCODE_U, KeyEvent.KEYCODE_J, KeyEvent.KEYCODE_M), intArrayOf(KeyEvent.KEYCODE_I, KeyEvent.KEYCODE_K, KeyEvent.KEYCODE_COMMA), intArrayOf(KeyEvent.KEYCODE_O, KeyEvent.KEYCODE_L, KeyEvent.KEYCODE_PERIOD), intArrayOf(KeyEvent.KEYCODE_P, KeyEvent.KEYCODE_SEMICOLON, KeyEvent.KEYCODE_SLASH), intArrayOf(KeyEvent.KEYCODE_GRAVE, KeyEvent.KEYCODE_APOSTROPHE, KeyEvent.KEYCODE_BACKSLASH), intArrayOf(0, 0, 0), intArrayOf(0, 0, 0))
+    val KEY_CODES = arrayOf(intArrayOf(0, 0, 0),
+            intArrayOf(0, 0, 0),
+            intArrayOf(KeyEvent.KEYCODE_Q, KeyEvent.KEYCODE_A, KeyEvent.KEYCODE_Z),
+            intArrayOf(KeyEvent.KEYCODE_W, KeyEvent.KEYCODE_S, KeyEvent.KEYCODE_X),
+            intArrayOf(KeyEvent.KEYCODE_E, KeyEvent.KEYCODE_D, KeyEvent.KEYCODE_C),
+            intArrayOf(KeyEvent.KEYCODE_R, KeyEvent.KEYCODE_F, KeyEvent.KEYCODE_V),
+            intArrayOf(KeyEvent.KEYCODE_T, KeyEvent.KEYCODE_G, KeyEvent.KEYCODE_B),
+            intArrayOf(KeyEvent.KEYCODE_Y, KeyEvent.KEYCODE_H, KeyEvent.KEYCODE_N),
+            intArrayOf(KeyEvent.KEYCODE_U, KeyEvent.KEYCODE_J, KeyEvent.KEYCODE_M),
+            intArrayOf(KeyEvent.KEYCODE_I, KeyEvent.KEYCODE_K, KeyEvent.KEYCODE_COMMA),
+            intArrayOf(KeyEvent.KEYCODE_O, KeyEvent.KEYCODE_L, KeyEvent.KEYCODE_PERIOD),
+            intArrayOf(KeyEvent.KEYCODE_P, KeyEvent.KEYCODE_SEMICOLON, KeyEvent.KEYCODE_SLASH),
+            intArrayOf(KeyEvent.KEYCODE_GRAVE, KeyEvent.KEYCODE_APOSTROPHE, KeyEvent.KEYCODE_BACKSLASH),
+            intArrayOf(0, 0, 0),
+            intArrayOf(0, 0, 0))
     val SPECIAL_KEY_CODES = intArrayOf(KeyEvent.KEYCODE_SHIFT_LEFT, KeyEvent.KEYCODE_SHIFT_RIGHT, KeyEvent.KEYCODE_0,
             KeyEvent.KEYCODE_DEL, KeyEvent.KEYCODE_SPACE, KeyEvent.KEYCODE_ENTER)
 
@@ -91,9 +109,9 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
     val mHandler = Handler()
     var mNotesOfChord = arrayOf<Int>()
     var mSound: Sound? = null
-    var mTaps = SparseIntArray()
-    val mShapes: MutableList<Shape> = ArrayList()
-    val mKeyWatcher = Any()
+    var mTaps = SparseArray<Statics.OBJECT>()
+    private val mShapes: MutableList<Shape> = ArrayList()
+    private val mKeyWatcher = Any()
     var mStopTimer: Timer? = null
     var mCancelSwitchingStatusBarTimer: Timer? = null
     var mCancelSpecialKeyTimer: Timer? = null
@@ -105,10 +123,9 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
     @SuppressLint("DrawAllocation")
     override fun onDraw(canvas: Canvas) {
-        var c: Int
-        var d: Int
-        var delta: Int
-        var w: Float
+        var color: Statics.COLOR
+        var pressed: Int
+        var width: Float
         val paint = Paint()
         val textPaint = Paint()
         var rect: RectF?
@@ -120,80 +137,82 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
         paint.style = Paint.Style.FILL
         val rad = radiusOfButton(mHeight)
         textPaint.isAntiAlias = true
-        textPaint.color = color(Statics.COLOR_BLACK, 0, mDarken)
+        textPaint.color = color(Statics.COLOR.BLACK, 0, mDarken)
         textPaint.textSize = rad / 2.toFloat()
         rect = RectF(0F, 0F, mWidth.toFloat(), mHeight.toFloat())
-        paint.color = color(Statics.COLOR_WHITE, 0, mDarken)
+        paint.color = color(Statics.COLOR.WHITE, 0, mDarken)
         canvas.drawRect(rect, paint)
-        if (mSituation == Statics.SITUATION_TRANSPOSE || mSituation == Statics.SITUATION_TRANSPOSE_MOVING || mDestination == Statics.SITUATION_TRANSPOSE || mDestination == Statics.SITUATION_TRANSPOSE_MOVING) {
+        if (mSituation == Statics.SITUATION.TRANSPOSE || mSituation == Statics.SITUATION.TRANSPOSE_MOVING || mDestination == Statics.SITUATION.TRANSPOSE || mDestination == Statics.SITUATION.TRANSPOSE_MOVING) {
             paint.style = Paint.Style.FILL
-            paint.color = color(Statics.COLOR_PASTELGRAY, 0, mDarken)
+            paint.color = color(Statics.COLOR.PASTELGRAY, 0, mDarken)
             canvas.drawRect(rectOfToolbar(mWidth, mHeight, 1.0f), paint)
-            d = if (mToolbarPressed == 0) 1 else 0
-            paint.color = color(Statics.COLOR_PURPLE, d, mDarken)
+            pressed = if (mToolbarPressed == 0) 1 else 0
+            paint.color = color(Statics.COLOR.PURPLE, pressed, mDarken)
             rect = rectOfToolbarButton(0, 0, mWidth, mHeight, 1.0f)
             canvas.drawOval(rect, paint)
             str = context.getString(R.string.ok)
-            w = textPaint.measureText(str)
-            canvas.drawText(str, rect.centerX() - w / 2,
+            width = textPaint.measureText(str)
+            canvas.drawText(str, rect.centerX() - width / 2,
                     rect.centerY() - (fontMetrics.ascent + fontMetrics.descent) / 2, textPaint)
-            d = if (mToolbarPressed == 1) 1 else 0
-            paint.color = color(Statics.COLOR_PURPLE, d, mDarken)
+            pressed = if (mToolbarPressed == 1) 1 else 0
+            paint.color = color(Statics.COLOR.PURPLE, pressed, mDarken)
             rect = rectOfToolbarButton(1, 0, mWidth, mHeight, 1.0f)
             canvas.drawOval(rect, paint)
             str = Statics.SCALES[7]
-            w = textPaint.measureText(str)
-            canvas.drawText(str, rect.centerX() - w / 2,
+            width = textPaint.measureText(str)
+            canvas.drawText(str, rect.centerX() - width / 2,
                     rect.centerY() - (fontMetrics.ascent + fontMetrics.descent) / 2, textPaint)
-            d = if (mToolbarPressed == 2) 1 else 0
-            paint.color = color(Statics.COLOR_PURPLE, d, mDarken)
+            pressed = if (mToolbarPressed == 2) 1 else 0
+            paint.color = color(Statics.COLOR.PURPLE, pressed, mDarken)
             rect = rectOfToolbarTransposingButton(0, 0, mWidth, mHeight, 1.0f)
             canvas.drawOval(rect, paint)
             str = context.getString(R.string.settings_volume_short)
-            w = textPaint.measureText(str)
-            canvas.drawText(str, rect.centerX() - w / 2,
+            width = textPaint.measureText(str)
+            canvas.drawText(str, rect.centerX() - width / 2,
                     rect.centerY() - (fontMetrics.ascent + fontMetrics.descent) / 2, textPaint)
-            d = if (mToolbarPressed == 3) 1 else 0
-            paint.color = color(Statics.COLOR_PURPLE, d, mDarken)
+            pressed = if (mToolbarPressed == 3) 1 else 0
+            paint.color = color(Statics.COLOR.PURPLE, pressed, mDarken)
             rect = rectOfToolbarTransposingButton(1, 0, mWidth, mHeight, 1.0f)
             canvas.drawOval(rect, paint)
             str = context.getString(R.string.settings_sound_range_short)
-            w = textPaint.measureText(str)
-            canvas.drawText(str, rect.centerX() - w / 2,
+            width = textPaint.measureText(str)
+            canvas.drawText(str, rect.centerX() - width / 2,
                     rect.centerY() - (fontMetrics.ascent + fontMetrics.descent) / 2, textPaint)
-            d = if (mToolbarPressed == 4) 1 else 0
-            paint.color = color(Statics.COLOR_PURPLE, d, mDarken)
+            pressed = if (mToolbarPressed == 4) 1 else 0
+            paint.color = color(Statics.COLOR.PURPLE, pressed, mDarken)
             rect = rectOfToolbarTransposingButton(2, 0, mWidth, mHeight, 1.0f)
             canvas.drawOval(rect, paint)
             str = context.getString(R.string.settings_waveform_short)
-            w = textPaint.measureText(str)
-            canvas.drawText(str, rect.centerX() - w / 2,
+            width = textPaint.measureText(str)
+            canvas.drawText(str, rect.centerX() - width / 2,
                     rect.centerY() - (fontMetrics.ascent + fontMetrics.descent) / 2, textPaint)
         }
-        delta = mScroll / (mHeight / 5)
+        var delta: Int = mScroll / (mHeight / 5)
         for (x in -7 - delta..7 - delta) {
-            d = if (x == mScalePressed) 1 else 0
-            paint.color = color(Statics.COLOR_LIGHTGRAY, d, mDarken)
+            pressed = if (x == mScalePressed) 1 else 0
+            paint.color = color(Statics.COLOR.LIGHTGRAY, pressed, mDarken)
             rect = rectOfButton(x, -2, mWidth, mHeight, mScroll)
             canvas.drawOval(rect, paint)
             if (x + mScale < -7) {
-                textPaint.color = color(Statics.COLOR_GRAY, 0, mDarken)
+                textPaint.color = color(Statics.COLOR.GRAY, 0, mDarken)
                 str = stringOfScale(x + mScale + 12)
             } else if (x + mScale > 7) {
-                textPaint.color = color(Statics.COLOR_GRAY, 0, mDarken)
+                textPaint.color = color(Statics.COLOR.GRAY, 0, mDarken)
                 str = stringOfScale(x + mScale - 12)
             } else {
-                textPaint.color = color(Statics.COLOR_BLACK, 0, mDarken)
+                textPaint.color = color(Statics.COLOR.BLACK, 0, mDarken)
                 str = stringOfScale(x + mScale)
             }
             if (x == 0 && mIsScalePullingDown) {
                 str = context.getString(R.string.ok)
             }
-            w = textPaint.measureText(str)
-            canvas.drawText(str, rect.centerX() - w / 2,
-                    rect.centerY() - (fontMetrics.ascent + fontMetrics.descent) / 2, textPaint)
+            width = textPaint.measureText(str)
+            if (rect != null) {
+                canvas.drawText(str, rect.centerX() - width / 2,
+                        rect.centerY() - (fontMetrics.ascent + fontMetrics.descent) / 2, textPaint)
+            }
         }
-        textPaint.color = color(Statics.COLOR_BLACK, 0, mDarken)
+        textPaint.color = color(Statics.COLOR.BLACK, 0, mDarken)
         delta = mScroll / (mHeight / 5)
         for (x in -7 - delta..7 - delta) {
             var maj = x + 15 + mScale
@@ -204,21 +223,21 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
             if (min >= 36) min -= 12
             val xx = (x + 360) % 12
             for (y in -1..1) {
-                c = 0
-                d = 0
-                if (mPlaying > 0 && mPlayingX == x && mPlayingY == y) d = 1
+                color = Statics.COLOR.ABSOLUTE_LIGHT
+                pressed = 0
+                if (mPlaying > 0 && mPlayingIndices.first == x && mPlayingIndices.second == y) pressed = 1
                 when (xx) {
-                    11, 0, 1 -> c = Statics.COLOR_RED
-                    2, 3, 4 -> c = Statics.COLOR_YELLOW
-                    5, 6, 7 -> c = Statics.COLOR_GREEN
-                    8, 9, 10 -> c = Statics.COLOR_BLUE
+                    11, 0, 1 -> color = Statics.COLOR.RED
+                    2, 3, 4 -> color = Statics.COLOR.YELLOW
+                    5, 6, 7 -> color = Statics.COLOR.GREEN
+                    8, 9, 10 -> color = Statics.COLOR.BLUE
                 }
-                if (mSituation == Statics.SITUATION_TRANSPOSE || mDestination == Statics.SITUATION_TRANSPOSE) {
-                    c = Statics.COLOR_LIGHTGRAY
+                if (mSituation == Statics.SITUATION.TRANSPOSE || mDestination == Statics.SITUATION.TRANSPOSE) {
+                    color = Statics.COLOR.LIGHTGRAY
                 } else if (mDarken && (mIsScrolling || mPulling > 0)) {
-                    c = Statics.COLOR_DARKGRAY
+                    color = Statics.COLOR.DARKGRAY
                 }
-                paint.color = color(c, d, mDarken)
+                paint.color = color(color, pressed, mDarken)
                 rect = rectOfButton(x, y, mWidth, mHeight, mScroll)
                 canvas.drawOval(rect, paint)
                 when (y) {
@@ -226,66 +245,68 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                     0 -> str = Statics.NOTES_5TH[maj]
                     1 -> str = Statics.NOTES_5TH[min] + Statics.MINOR
                 }
-                w = textPaint.measureText(str)
-                canvas.drawText(str, rect.centerX() - w / 2,
-                        rect.centerY() - (fontMetrics.ascent + fontMetrics.descent) / 2, textPaint)
+                width = textPaint.measureText(str)
+                if (rect != null) {
+                    canvas.drawText(str, rect.centerX() - width / 2,
+                            rect.centerY() - (fontMetrics.ascent + fontMetrics.descent) / 2, textPaint)
+                }
             }
         }
-        if (mSituation == Statics.SITUATION_TRANSPOSE || mDestination == Statics.SITUATION_TRANSPOSE) {
+        if (mSituation == Statics.SITUATION.TRANSPOSE || mDestination == Statics.SITUATION.TRANSPOSE) {
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = mHeight / 160.0f
             for (x in -7..7) {
                 val xx = (x + 360) % 12
                 for (y in -1..1) {
-                    c = 0
+                    color = Statics.COLOR.RED
                     when (xx) {
-                        11, 0, 1 -> c = Statics.COLOR_RED
-                        2, 3, 4 -> c = Statics.COLOR_YELLOW
-                        5, 6, 7 -> c = Statics.COLOR_GREEN
-                        8, 9, 10 -> c = Statics.COLOR_BLUE
+                        11, 0, 1 -> color = Statics.COLOR.RED
+                        2, 3, 4 -> color = Statics.COLOR.YELLOW
+                        5, 6, 7 -> color = Statics.COLOR.GREEN
+                        8, 9, 10 -> color = Statics.COLOR.BLUE
                     }
                     if (mDarken) {
-                        c = Statics.COLOR_DARKGRAY
+                        color = Statics.COLOR.DARKGRAY
                     }
-                    paint.color = color(c, 0, mDarken)
+                    paint.color = color(color, 0, mDarken)
                     var sc = mScroll
-                    if (mSituation == Statics.SITUATION_TRANSPOSE_MOVING) sc = 0
+                    if (mSituation == Statics.SITUATION.TRANSPOSE_MOVING) sc = 0
                     rect = rectOfButton(x, y, mWidth, mHeight, sc)
                     canvas.drawOval(rect, paint)
                 }
             }
             if (mDarken) {
-                paint.color = color(Statics.COLOR_DARKGRAY, 0, true)
+                paint.color = color(Statics.COLOR.DARKGRAY, 0, true)
             } else {
-                paint.color = color(Statics.COLOR_RED, 0, false)
+                paint.color = color(Statics.COLOR.RED, 0, false)
             }
             var sc = mScroll
-            if (mSituation == Statics.SITUATION_TRANSPOSE_MOVING) sc = 0
+            if (mSituation == Statics.SITUATION.TRANSPOSE_MOVING) sc = 0
             rect = rectOfButton(0, -2, mWidth, mHeight, sc)
             canvas.drawOval(rect, paint)
         }
         paint.style = Paint.Style.FILL
-        paint.color = color(Statics.COLOR_LIGHTGRAY, 0, mDarken)
+        paint.color = color(Statics.COLOR.LIGHTGRAY, 0, mDarken)
         canvas.drawRect(rectOfStatusBar(mWidth, mHeight, mBarsShowingRate), paint)
-        paint.color = color(Statics.COLOR_LIGHTGRAY, 0, mDarken)
+        paint.color = color(Statics.COLOR.LIGHTGRAY, 0, mDarken)
         canvas.drawRect(rectOfToolbar(mWidth, mHeight, mBarsShowingRate), paint)
         for (x in 0..3) {
-            d = if (mStatusBarFlags[x] > 0) 1 else 0
-            paint.color = color(Statics.COLOR_ORANGE, d, mDarken)
+            pressed = if (mStatusBarFlags[x] > 0) 1 else 0
+            paint.color = color(Statics.COLOR.ORANGE, pressed, mDarken)
             rect = rectOfStatusBarButton(x, 0, mWidth, mHeight, mBarsShowingRate)
             canvas.drawOval(rect, paint)
-            if (mStatusBarFlags[x] >= 2) textPaint.color = color(Statics.COLOR_ORANGE, 0, mDarken) else textPaint.color = color(Statics.COLOR_BLACK, 0, mDarken)
+            if (mStatusBarFlags[x] >= 2) textPaint.color = color(Statics.COLOR.ORANGE, 0, mDarken) else textPaint.color = color(Statics.COLOR.BLACK, 0, mDarken)
             str = Statics.TENSIONS[x]
             if (x == 2 && mStatusBarFlags[3] > 0) str = "6"
             if (x == 3 && mStatusBarFlags[2] > 0) str = "6"
-            w = textPaint.measureText(str)
-            canvas.drawText(str, rect.centerX() - w / 2,
+            width = textPaint.measureText(str)
+            canvas.drawText(str, rect.centerX() - width / 2,
                     rect.centerY() - (fontMetrics.ascent + fontMetrics.descent) / 2, textPaint)
         }
-        textPaint.color = color(Statics.COLOR_BLACK, 0, mDarken)
+        textPaint.color = color(Statics.COLOR.BLACK, 0, mDarken)
         for (x in 0..2) {
-            d = if (mToolbarPressed == x) 1 else 0
-            paint.color = color(Statics.COLOR_PURPLE, d, mDarken)
+            pressed = if (mToolbarPressed == x) 1 else 0
+            paint.color = color(Statics.COLOR.PURPLE, pressed, mDarken)
             rect = rectOfToolbarButton(x, 0, mWidth, mHeight, mBarsShowingRate)
             canvas.drawOval(rect, paint)
             str = when (x) {
@@ -294,84 +315,84 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 2 -> stringOfScale(mScale)
                 else -> ""
             }
-            w = textPaint.measureText(str)
-            canvas.drawText(str, rect.centerX() - w / 2,
+            width = textPaint.measureText(str)
+            canvas.drawText(str, rect.centerX() - width / 2,
                     rect.centerY() - (fontMetrics.ascent + fontMetrics.descent) / 2, textPaint)
         }
         if (rectOfStatusBarButton(3, 0, mWidth, mHeight, mBarsShowingRate).right < rectOfKeyboardIndicator(0, 0, mWidth, mHeight, mBarsShowingRate)!!.left) {
             for (x in 0..11) {
-                paint.color = color(Statics.COLOR_GRAY, 0, mDarken)
-                if (mIsIndicatorsTapped) paint.color = color(Statics.COLOR_DARKGRAY, 0, mDarken)
+                paint.color = color(Statics.COLOR.GRAY, 0, mDarken)
+                if (mIsIndicatorsTapped) paint.color = color(Statics.COLOR.DARKGRAY, 0, mDarken)
                 rect = rectOfKeyboardIndicator(x, 0, mWidth, mHeight, mBarsShowingRate)
                 canvas.drawOval(rect, paint)
             }
             for (integer in mNotesOfChord) {
-                paint.color = color(Statics.COLOR_ABSOLUTE_LIGHT, 0, mDarken)
+                paint.color = color(Statics.COLOR.ABSOLUTE_LIGHT, 0, mDarken)
                 rect = rectOfKeyboardIndicator(integer!!, 2, mWidth, mHeight, mBarsShowingRate)
                 canvas.drawOval(rect, paint)
             }
         }
-        paint.color = color(Statics.COLOR_GRAY, 0, mDarken)
+        paint.color = color(Statics.COLOR.GRAY, 0, mDarken)
         rect = rectOfScrollBar(mWidth, mHeight, mBarsShowingRate)
         canvas.drawRect(rect, paint)
-        paint.color = color(Statics.COLOR_DARKGRAY, 0, mDarken)
+        paint.color = color(Statics.COLOR.DARKGRAY, 0, mDarken)
         rect = rectOfScrollNob(mScroll, mUpper, mWidth, mHeight, mBarsShowingRate)
         canvas.drawRect(rect, paint)
         if (mDarken) {
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = mHeight / 25.toFloat()
-            paint.color = color(Statics.COLOR_ABSOLUTE_CYAN, 1, mDarken)
+            paint.color = color(Statics.COLOR.ABSOLUTE_CYAN, 1, mDarken)
             for (i in mShapes.indices) {
                 val shape = mShapes[i]
                 paint.alpha = 255 * shape.mLifeTime / maxLifetime
                 val sx = shape.mCenter.x
                 val sy = shape.mCenter.y
-                val degreeRadianRate = (Math.PI * 2 / 360.0).toFloat()
-                if (shape.mStyle == Shape.STYLE_LINE) {
+                val degreeRadian = (Math.PI * 2 / 360.0).toFloat()
+                if (shape.mStyle == Shape.SHAPE_STYLE.LINE) {
                     val r = shape.mRadStart.toFloat()
-                    val ax = sx - (Math.cos(r * degreeRadianRate.toDouble()) * mWidth).toFloat()
-                    val ay = sy - (Math.sin(r * degreeRadianRate.toDouble()) * mWidth).toFloat()
-                    val bx = sx + (Math.cos(r * degreeRadianRate.toDouble()) * mWidth).toFloat()
-                    val by = sy + (Math.sin(r * degreeRadianRate.toDouble()) * mWidth).toFloat()
+                    val ax = sx - (Math.cos(r * degreeRadian.toDouble()) * mWidth).toFloat()
+                    val ay = sy - (Math.sin(r * degreeRadian.toDouble()) * mWidth).toFloat()
+                    val bx = sx + (Math.cos(r * degreeRadian.toDouble()) * mWidth).toFloat()
+                    val by = sy + (Math.sin(r * degreeRadian.toDouble()) * mWidth).toFloat()
                     canvas.drawLine(ax, ay, bx, by, paint)
                 }
-                if (shape.mStyle == Shape.STYLE_CIRCLE) {
+                if (shape.mStyle == Shape.SHAPE_STYLE.CIRCLE) {
                     canvas.drawCircle(sx, sy,
                             mHeight * (0.2f
                                     + (maxLifetime - shape.mLifeTime).toFloat() / maxLifetime)
                                     * 0.8f,
                             paint)
                 }
-                if (shape.mStyle == Shape.STYLE_TRIANGLE) {
+                if (shape.mStyle == Shape.SHAPE_STYLE.TRIANGLE) {
                     val l = (mHeight
                             * (0.3f + (maxLifetime - shape.mLifeTime).toFloat() / maxLifetime)
                             * 0.7f)
                     val r = (shape.mRadStart * shape.mLifeTime
                             + shape.mRadEnd * (maxLifetime - shape.mLifeTime)) / maxLifetime.toFloat()
-                    val ax = sx + (Math.cos(r * degreeRadianRate.toDouble()) * l).toFloat()
-                    val ay = sy + (Math.sin(r * degreeRadianRate.toDouble()) * l).toFloat()
-                    val bx = sx + (Math.cos((r + 120) * degreeRadianRate.toDouble()) * l).toFloat()
-                    val by = sy + (Math.sin((r + 120) * degreeRadianRate.toDouble()) * l).toFloat()
-                    val cx = sx + (Math.cos((r + 240) * degreeRadianRate.toDouble()) * l).toFloat()
-                    val cy = sy + (Math.sin((r + 240) * degreeRadianRate.toDouble()) * l).toFloat()
+                    val ax = sx + (Math.cos(r * degreeRadian.toDouble()) * l).toFloat()
+                    val ay = sy + (Math.sin(r * degreeRadian.toDouble()) * l).toFloat()
+                    val bx = sx + (Math.cos((r + 120) * degreeRadian.toDouble()) * l).toFloat()
+                    val by = sy + (Math.sin((r + 120) * degreeRadian.toDouble()) * l).toFloat()
+                    val cx = sx + (Math.cos((r + 240) * degreeRadian.toDouble()) * l).toFloat()
+                    val cy = sy + (Math.sin((r + 240) * degreeRadian.toDouble()) * l).toFloat()
                     canvas.drawLine(ax, ay, bx, by, paint)
                     canvas.drawLine(bx, by, cx, cy, paint)
                     canvas.drawLine(cx, cy, ax, ay, paint)
                 }
-                if (shape.mStyle == Shape.STYLE_SQUARE) {
+                if (shape.mStyle == Shape.SHAPE_STYLE.SQUARE) {
                     val l = (mHeight
                             * (0.3f + (maxLifetime - shape.mLifeTime).toFloat() / maxLifetime)
                             * 0.7f)
                     val r = (shape.mRadStart * shape.mLifeTime
                             + shape.mRadEnd * (maxLifetime - shape.mLifeTime)) / maxLifetime.toFloat()
-                    val ax = sx + (Math.cos(r * degreeRadianRate.toDouble()) * l).toFloat()
-                    val ay = sy + (Math.sin(r * degreeRadianRate.toDouble()) * l).toFloat()
-                    val bx = sx + (Math.cos((r + 90) * degreeRadianRate.toDouble()) * l).toFloat()
-                    val by = sy + (Math.sin((r + 90) * degreeRadianRate.toDouble()) * l).toFloat()
-                    val cx = sx + (Math.cos((r + 180) * degreeRadianRate.toDouble()) * l).toFloat()
-                    val cy = sy + (Math.sin((r + 180) * degreeRadianRate.toDouble()) * l).toFloat()
-                    val dx = sx + (Math.cos((r + 270) * degreeRadianRate.toDouble()) * l).toFloat()
-                    val dy = sy + (Math.sin((r + 270) * degreeRadianRate.toDouble()) * l).toFloat()
+                    val ax = sx + (Math.cos(r * degreeRadian.toDouble()) * l).toFloat()
+                    val ay = sy + (Math.sin(r * degreeRadian.toDouble()) * l).toFloat()
+                    val bx = sx + (Math.cos((r + 90) * degreeRadian.toDouble()) * l).toFloat()
+                    val by = sy + (Math.sin((r + 90) * degreeRadian.toDouble()) * l).toFloat()
+                    val cx = sx + (Math.cos((r + 180) * degreeRadian.toDouble()) * l).toFloat()
+                    val cy = sy + (Math.sin((r + 180) * degreeRadian.toDouble()) * l).toFloat()
+                    val dx = sx + (Math.cos((r + 270) * degreeRadian.toDouble()) * l).toFloat()
+                    val dy = sy + (Math.sin((r + 270) * degreeRadian.toDouble()) * l).toFloat()
                     canvas.drawLine(ax, ay, bx, by, paint)
                     canvas.drawLine(bx, by, cx, cy, paint)
                     canvas.drawLine(cx, cy, dx, dy, paint)
@@ -382,7 +403,7 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
         // デバッグ用
         if (debugMode) {
-            paint.color = color(Statics.COLOR_BLACK, 0, mDarken)
+            paint.color = color(Statics.COLOR.BLACK, 0, mDarken)
             canvas.drawText("" + Sound.requiredTime, 4f, 20f, textPaint)
         }
     }
@@ -392,12 +413,12 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
         val x = event.getX(index).toInt()
         val y = event.getY(index).toInt()
         val id = event.getPointerId(index)
-        if (mSituation == Statics.SITUATION_TRANSPOSE || mSituation == Statics.SITUATION_TRANSPOSE_MOVING) {
+        if (mSituation == Statics.SITUATION.TRANSPOSE || mSituation == Statics.SITUATION.TRANSPOSE_MOVING) {
             for (i in 0..1) {
                 rect = rectOfToolbarButton(i, 0, mWidth, mHeight, 1.0f)
                 if (rect.contains(x.toFloat(), y.toFloat())) {
                     mToolbarPressed = i
-                    mTaps.put(id, Statics.TOOLBAR_BUTTON)
+                    mTaps.put(id, Statics.OBJECT.TOOLBAR_BUTTON)
                     vibrate()
                     invalidate(RectFToRect(rectOfToolbar(mWidth, mHeight, 1.0f)))
                     return false
@@ -407,7 +428,7 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 rect = rectOfToolbarTransposingButton(i, 0, mWidth, mHeight, 1.0f)
                 if (rect.contains(x.toFloat(), y.toFloat())) {
                     mToolbarPressed = i + 2
-                    mTaps.put(id, Statics.TOOLBAR_BUTTON)
+                    mTaps.put(id, Statics.OBJECT.TOOLBAR_BUTTON)
                     vibrate()
                     invalidate(RectFToRect(rectOfToolbar(mWidth, mHeight, 1.0f)))
                     return false
@@ -418,31 +439,31 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 rect = rectOfToolbarButton(i, 0, mWidth, mHeight, mBarsShowingRate)
                 if (rect.contains(x.toFloat(), y.toFloat())) {
                     mToolbarPressed = i
-                    mTaps.put(id, Statics.TOOLBAR_BUTTON)
+                    mTaps.put(id, Statics.OBJECT.TOOLBAR_BUTTON)
                     vibrate()
                     invalidate(RectFToRect(rectOfToolbar(mWidth, mHeight, 1.0f)))
                     return false
                 }
             }
         }
-        if (mSituation == Statics.SITUATION_TRANSPOSE) {
+        if (mSituation == Statics.SITUATION.TRANSPOSE) {
             for (i in -7..7) {
                 rect = rectOfButton(i, -2, mWidth, mHeight, mScroll)
                 if (rect.contains(x.toFloat(), y.toFloat())) {
                     mIsScalePullingDown = false
                     mScalePressed = i
-                    mTaps.put(id, Statics.TRANSPOSE_SCALE_BUTTON)
+                    mTaps.put(id, Statics.OBJECT.TRANSPOSE_SCALE_BUTTON)
                     vibrate()
                     invalidate()
                     return false
                 }
             }
-        } else if (mSituation == Statics.SITUATION_NORMAL) {
+        } else if (mSituation == Statics.SITUATION.NORMAL) {
             for (i in 0..3) {
                 rect = rectOfStatusBarButton(i, 0, mWidth, mHeight, mBarsShowingRate)
                 if (rect.contains(x.toFloat(), y.toFloat())) {
                     if (mLastTapped == i && System.currentTimeMillis() - mLastTappedTime < 400) mStatusBarFlags[i] = 2 else mStatusBarFlags[i] = 1
-                    mTaps.put(id, Statics.STATUSBAR_BUTTON)
+                    mTaps.put(id, Statics.OBJECT.STATUSBAR_BUTTON)
                     vibrate()
                     mLastTapped = i
                     mLastTappedTime = System.currentTimeMillis()
@@ -451,11 +472,10 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 }
             }
             if (rectOfScrollNob(mScroll, mUpper, mWidth, mHeight, mBarsShowingRate).contains(x.toFloat(), y.toFloat())) {
-                mOriginalX = x
-                mOriginalY = y
+                mOriginalIndices = Pair(x, y)
                 mOriginalScroll = mScroll
                 mIsScrolling = true
-                mTaps.put(id, Statics.SCROLL_NOB)
+                mTaps.put(id, Statics.OBJECT.SCROLL_NOB)
                 vibrate()
                 if (mDarken) {
                     invalidate()
@@ -467,7 +487,7 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                     && rectOfKeyboardIndicators(0, mWidth, mHeight, 1.0f).contains(x.toFloat(), y.toFloat())) {
                 if (!mIsIndicatorsTapped) {
                     mIsIndicatorsTapped = true
-                    mTaps.put(id, Statics.KEYBOARD_INDICATORS)
+                    mTaps.put(id, Statics.OBJECT.KEYBOARD_INDICATORS)
                     vibrate()
                     invalidate(RectFToRect(rectOfKeyboardIndicators(2, mWidth, mHeight, 1.0f)))
                 }
@@ -487,7 +507,7 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 } else {
                     mScroll = 0
                 }
-                mTaps.put(id, Statics.TOOL_BAR)
+                mTaps.put(id, Statics.OBJECT.TOOLBAR)
                 vibrate()
                 invalidate(RectFToRect(rectOfToolbar(mWidth, mHeight, 1.0f)))
                 return false
@@ -506,7 +526,7 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 } else {
                     mScroll = 0
                 }
-                mTaps.put(id, Statics.STATUS_BAR)
+                mTaps.put(id, Statics.OBJECT.STATUS_BAR)
                 vibrate()
                 invalidate(RectFToRect(rectOfStatusBar(mWidth, mHeight, 1.0f)))
                 return false
@@ -520,7 +540,7 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                     mOriginalScroll = mScroll
                     mTappedX = x
                     mPlayingID = id
-                    mTaps.put(mPlayingID, Statics.CHORD_BUTTON)
+                    mTaps.put(mPlayingID, Statics.OBJECT.CHORD_BUTTON)
                     vibrate()
                     if (mDarken) {
                         mShapes.add(Shape(PointF(x.toFloat(), y.toFloat())))
@@ -547,24 +567,24 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
         val x = event.getX(index).toInt()
         val y = event.getY(index).toInt()
         val id = event.getPointerId(index)
-        val kind = if (id >= 0) mTaps[id] else 0
+        val kind: Statics.OBJECT? = if (id >= 0) mTaps[id] else null
         when (kind) {
-            Statics.SCROLL_NOB -> {
-                if (-y + mOriginalY > mHeight / 5) {
+            Statics.OBJECT.SCROLL_NOB -> {
+                if (-y + mOriginalIndices.second > mHeight / 5) {
                     if (mUpper == 0) {
                         vibrate()
                         mScroll = 0
                         mUpper = mHeight / 35 / 5 * 2
                     }
                 } else {
-                    mScroll = (-x + mOriginalX) * 5 + mOriginalScroll
+                    mScroll = (-x + mOriginalIndices.first) * 5 + mOriginalScroll
                     if (mScroll < -scrollMax(mWidth, mHeight)) mScroll = -scrollMax(mWidth, mHeight)
                     if (mScroll > scrollMax(mWidth, mHeight)) mScroll = scrollMax(mWidth, mHeight)
                     mUpper = 0
                 }
                 invalidate(RectFToRect(rectOfToolbar(mWidth, mHeight, 1.0f)))
             }
-            Statics.STATUSBAR_BUTTON -> {
+            Statics.OBJECT.STATUSBAR_BUTTON -> {
                 var i = 0
                 while (i < 4) {
                     rect = rectOfStatusBarButton(i, 0, mWidth, mHeight, mBarsShowingRate)
@@ -590,9 +610,9 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 }
                 invalidate(RectFToRect(rectOfStatusBar(mWidth, mHeight, 1.0f)))
             }
-            Statics.TOOLBAR_BUTTON -> {
+            Statics.OBJECT.TOOLBAR_BUTTON -> {
                 mToolbarPressed = -1
-                if (mSituation == Statics.SITUATION_TRANSPOSE || mSituation == Statics.SITUATION_TRANSPOSE_MOVING) {
+                if (mSituation == Statics.SITUATION.TRANSPOSE || mSituation == Statics.SITUATION.TRANSPOSE_MOVING) {
                     rect = rectOfToolbarButton(0, 0, mWidth, mHeight, 1.0f)
                     run {
                         var i = 0
@@ -600,7 +620,7 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                             rect = rectOfToolbarButton(i, 0, mWidth, mHeight, 1.0f)
                             if (rect.contains(x.toFloat(), y.toFloat())) {
                                 mToolbarPressed = i
-                                mTaps.put(id, Statics.TOOLBAR_BUTTON)
+                                mTaps.put(id, Statics.OBJECT.TOOLBAR_BUTTON)
                             }
                             i++
                         }
@@ -610,7 +630,7 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                         rect = rectOfToolbarTransposingButton(i, 0, mWidth, mHeight, 1.0f)
                         if (rect.contains(x.toFloat(), y.toFloat())) {
                             mToolbarPressed = i + 2
-                            mTaps.put(id, Statics.TOOLBAR_BUTTON)
+                            mTaps.put(id, Statics.OBJECT.TOOLBAR_BUTTON)
                         }
                         i++
                     }
@@ -620,16 +640,16 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                         rect = rectOfToolbarButton(i, 0, mWidth, mHeight, mBarsShowingRate)
                         if (rect.contains(x.toFloat(), y.toFloat())) {
                             mToolbarPressed = i
-                            mTaps.put(id, Statics.TOOLBAR_BUTTON)
+                            mTaps.put(id, Statics.OBJECT.TOOLBAR_BUTTON)
                         }
                         i++
                     }
                 }
                 invalidate(RectFToRect(rectOfToolbar(mWidth, mHeight, 1.0f)))
             }
-            Statics.CHORD_BUTTON -> {
+            Statics.OBJECT.CHORD_BUTTON -> {
                 if (id == mPlayingID) {
-                    if (mSituation == Statics.SITUATION_NORMAL) {
+                    if (mSituation == Statics.SITUATION.NORMAL) {
                         if (mPulling == 2) {
                             mScroll = mOriginalScroll + (x - mTappedX)
                             if (mScroll < -scrollMax(mWidth, mHeight)) mScroll = -scrollMax(mWidth, mHeight)
@@ -673,10 +693,10 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 invalidate(RectFToRect(rectOfStatusBar(mWidth, mHeight, 1.0f)))
                 invalidate(RectFToRect(rectOfToolbar(mWidth, mHeight, 1.0f)))
             }
-            Statics.TOOL_BAR -> if (mDarken) {
+            Statics.OBJECT.TOOLBAR -> if (mDarken) {
                 mFlashEffectStep = 300 / MainActivity.heartBeatInterval
             }
-            Statics.KEYBOARD_INDICATORS -> {
+            Statics.OBJECT.KEYBOARD_INDICATORS -> {
                 run {
                     if (mIsIndicatorsTapped != rectOfKeyboardIndicators(0, mWidth, mHeight, 1.0f).contains(event.x, event.y)) {
                         mIsIndicatorsTapped = rectOfKeyboardIndicators(0, mWidth, mHeight, 1.0f).contains(x.toFloat(), y.toFloat())
@@ -698,7 +718,7 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                     }
                 }
             }
-            Statics.TRANSPOSE_SCALE_BUTTON -> if (mScalePressed == 0) {
+            Statics.OBJECT.TRANSPOSE_SCALE_BUTTON -> if (mScalePressed == 0) {
                 if (!mIsScalePullingDown && y > mHeight * 7 / 35) {
                     mIsScalePullingDown = true
                     vibrate()
@@ -709,7 +729,7 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                     invalidate(RectFToRect(rectOfStatusBar(mWidth, mHeight, 1.0f)))
                 }
             }
-            Statics.STATUS_BAR -> {
+            Statics.OBJECT.STATUS_BAR -> {
             }
             else -> chordPressed = actionDown(event, index)
         }
@@ -759,7 +779,7 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 if (mIsScalePullingDown) {
                     mIsScalePullingDown = false
                     mOriginalScroll = mScroll
-                    startAnimation(Statics.SITUATION_NORMAL)
+                    startAnimation(Statics.SITUATION.NORMAL)
                 } else if (mScalePressed != Statics.FARAWAY && mScalePressed != 0) {
                     scaleReleased(mScalePressed)
                 }
@@ -775,7 +795,7 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 mPlayingID = -1
                 mPulling = 0
                 mUpper = 0
-                mTaps = SparseIntArray()
+                mTaps = SparseArray<Statics.OBJECT>()
                 invalidate()
             }
             else -> {
@@ -1046,11 +1066,11 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
     }
 
     fun toolbarReleased(which: Int) {
-        if (mSituation == Statics.SITUATION_TRANSPOSE) {
+        if (mSituation == Statics.SITUATION.TRANSPOSE) {
             when (which) {
                 0 -> {
                     mOriginalScroll = mScroll
-                    startAnimation(1 - mSituation)
+                    startAnimation(Statics.SITUATION.NORMAL)
                 }
                 1 -> startTransposingAnimation(0)
                 2 -> showVolumeSettingAlert()
@@ -1072,7 +1092,7 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 2 -> {
                     mIsScalePullingDown = false
                     mOriginalScroll = mScroll
-                    startAnimation(1 - mSituation)
+                    startAnimation(Statics.SITUATION.TRANSPOSE)
                 }
                 else -> {
                 }
@@ -1083,11 +1103,11 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
     }
 
     fun scaleReleased(which: Int) {
-        var ds: Int
-        ds = which + mScale
-        if (ds < -7) ds += 12
-        if (ds > 7) ds -= 12
-        startTransposingAnimation(ds)
+        var destScale: Int
+        destScale = which + mScale
+        if (destScale < -7) destScale += 12
+        if (destScale > 7) destScale -= 12
+        startTransposingAnimation(destScale)
         invalidate()
     }
 
@@ -1096,12 +1116,12 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
     }
 
     fun showVolumeSettingAlert() {
-        val vol = preferenceValue(context, Statics.PREF_VOLUME, 30) + 50
+        val volume = prefValue(context, Statics.PREF_VOLUME, 30) + 50
         val volumeView = TextView(context)
-        volumeView.text = "" + vol
+        volumeView.text = "" + volume
         volumeView.setTextAppearance(context, android.R.style.TextAppearance_Inverse)
         val seekBar = SeekBar(context)
-        seekBar.progress = vol
+        seekBar.progress = volume
         seekBar.max = 100
         seekBar.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
@@ -1119,7 +1139,7 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
         AlertDialog.Builder(context).setTitle(context.getString(R.string.settings_volume)).setView(layout)
                 .setPositiveButton(context.getString(R.string.ok)) { dialog, which ->
                     val vol = seekBar.progress - 50
-                    setPreferenceValue(this@TapChordView.context, Statics.PREF_VOLUME,
+                    setPrefValue(this@TapChordView.context, Statics.PREF_VOLUME,
                             vol)
                 }.setNegativeButton(context.getString(R.string.cancel)) { dialog, which -> }.show()
     }
@@ -1148,7 +1168,7 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 .setView(layout)
                 .setPositiveButton(this.context.getString(R.string.ok)) { dialog, which ->
                     mSoundRange = seekBar.progress - 24
-                    setPreferenceValue(this@TapChordView.context, Statics.PREF_SOUND_RANGE,
+                    setPrefValue(this@TapChordView.context, Statics.PREF_SOUND_RANGE,
                             mSoundRange)
                     preferenceValues
                 }
@@ -1157,14 +1177,14 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
     }
 
     fun showWaveformSettingAlert() {
-        val waveform = preferenceValue(context, Statics.PREF_WAVEFORM, 0)
+        val waveform = prefValue(context, Statics.PREF_WAVEFORM, 0)
         val list: Array<CharSequence?> = arrayOfNulls<CharSequence?>(7)
         for (i in list.indices) {
             list[i] = valueOfWaveform(i, context)
         }
         val dialog = AlertDialog.Builder(context).setTitle(context.getString(R.string.settings_waveform))
                 .setSingleChoiceItems(list, waveform) { arg0, arg1 ->
-                    setPreferenceValue(this@TapChordView.context, Statics.PREF_WAVEFORM,
+                    setPrefValue(this@TapChordView.context, Statics.PREF_WAVEFORM,
                             arg1)
                     arg0.dismiss()
                 }.create()
@@ -1178,8 +1198,7 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
         val f = convertNotesToNotesInRange(mNotesOfChord, mSoundRange)
         mSound = Sound(f, this.context)
         mPlaying = 1
-        mPlayingX = x
-        mPlayingY = y
+        mPlayingIndices = Pair(x, y)
         mSound!!.play()
         invalidate(RectFToRect(rectOfButton(x, y, mWidth, mHeight, mScroll)))
         invalidate(RectFToRect(rectOfStatusBar(mWidth, mHeight, 1.0f)))
@@ -1219,22 +1238,22 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
     fun heartbeat(interval: Int) {
         if (mStep > 0) {
             mStep--
-            if (mSituation == Statics.SITUATION_NORMAL) {
-                if (mDestination == Statics.SITUATION_TRANSPOSE) {
+            if (mSituation == Statics.SITUATION.NORMAL) {
+                if (mDestination == Statics.SITUATION.TRANSPOSE) {
                     mScroll = (mOriginalScroll * mStep / mStepMax).toInt()
                     mBarsShowingRate = mStep.toFloat() / mStepMax
                 }
-            } else if (mSituation == Statics.SITUATION_TRANSPOSE) {
-                if (mDestination == Statics.SITUATION_NORMAL) {
+            } else if (mSituation == Statics.SITUATION.TRANSPOSE) {
+                if (mDestination == Statics.SITUATION.NORMAL) {
                     mBarsShowingRate = (mStepMax - mStep) / mStepMax
                 }
-            } else if (mSituation == Statics.SITUATION_TRANSPOSE_MOVING) {
-                if (mDestination == Statics.SITUATION_TRANSPOSE) {
+            } else if (mSituation == Statics.SITUATION.TRANSPOSE_MOVING) {
+                if (mDestination == Statics.SITUATION.TRANSPOSE) {
                     mScroll = ((mScale - mDestinationScale) * (mHeight / 5) * (mStepMax - mStep) / mStepMax).toInt()
                 }
             }
             if (mStep == 0 && mSituation != mDestination) {
-                if (mSituation == Statics.SITUATION_TRANSPOSE_MOVING) {
+                if (mSituation == Statics.SITUATION.TRANSPOSE_MOVING) {
                     setScale(mDestinationScale)
                     mScroll = 0
                 }
@@ -1255,7 +1274,7 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
             if (stepMod == 0) stepMod = 1
             if (mFlashEffectStep % stepMod == 0 && (Math.random() * 10).toInt() == 0) {
                 val shape = Shape(PointF((Math.random() * mWidth).toFloat(), (mHeight / 2).toFloat()))
-                shape.mStyle = Shape.STYLE_LINE
+                shape.mStyle = Shape.SHAPE_STYLE.LINE
                 shape.mRadStart = 80
                 shape.mRadEnd = 80
                 mShapes.add(shape)
@@ -1276,13 +1295,13 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
         }
     }
 
-    fun startAnimation(dest: Int) {
+    fun startAnimation(dest: Statics.SITUATION) {
         mDestination = dest
         mStep = mStepMax.toInt()
     }
 
     fun startTransposingAnimation(ds: Int) {
-        mSituation = Statics.SITUATION_TRANSPOSE_MOVING
+        mSituation = Statics.SITUATION.TRANSPOSE_MOVING
         mStep = mStepMax.toInt()
         mDestinationScale = ds
     }
@@ -1294,20 +1313,20 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
     fun setScale(s: Int) {
         mScale = s
-        setPreferenceValue(this.context, Statics.PREF_SCALE, mScale)
+        setPrefValue(this.context, Statics.PREF_SCALE, mScale)
     }
 
     fun setDarken(d: Boolean) {
         mDarken = d
-        setPreferenceValue(this.context, Statics.PREF_DARKEN, if (mDarken) 1 else 0)
+        setPrefValue(this.context, Statics.PREF_DARKEN, if (mDarken) 1 else 0)
     }
 
     val preferenceValues: Unit
         get() {
-            mScale = preferenceValue(this.context, Statics.PREF_SCALE, 0)
-            mDarken = preferenceValue(this.context, Statics.PREF_DARKEN, 0) > 0
-            mSoundRange = preferenceValue(this.context, Statics.PREF_SOUND_RANGE, 0)
-            mVibration = preferenceValue(this.context, Statics.PREF_VIBRATION, 1) > 0
+            mScale = prefValue(this.context, Statics.PREF_SCALE, 0)
+            mDarken = prefValue(this.context, Statics.PREF_DARKEN, 0) > 0
+            mSoundRange = prefValue(this.context, Statics.PREF_SOUND_RANGE, 0)
+            mVibration = prefValue(this.context, Statics.PREF_VIBRATION, 1) > 0
             mStepMax = 100.0f / MainActivity.heartBeatInterval
         }
 
@@ -1323,8 +1342,8 @@ class TapChordView(context: Context, attrs: AttributeSet?) : View(context, attrs
     }
 
     init {
-        mSituation = Statics.SITUATION_NORMAL
-        mDestination = Statics.SITUATION_NORMAL
+        mSituation = Statics.SITUATION.NORMAL
+        mDestination = Statics.SITUATION.NORMAL
         mStep = 0
         mPlaying = 0
         mScroll = 0
