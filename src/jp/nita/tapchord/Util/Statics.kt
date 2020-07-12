@@ -287,10 +287,10 @@ object Statics {
     }
 
     @JvmStatic
-    fun setPrefValue(context: Context, key: String?, `val`: Int) {
+    fun setPrefValue(context: Context, key: String?, value: Int) {
         val pref = context.getSharedPreferences(PREF_KEY, Activity.MODE_PRIVATE)
         val editor = pref.edit()
-        editor.putInt(key, `val`)
+        editor.putInt(key, value)
         editor.commit()
     }
 
@@ -324,8 +324,8 @@ object Statics {
         }
     }
 
-    fun onOrOffString(context: Context, v: Int): String {
-        return if (v > 0) context.getString(R.string.on) else context.getString(R.string.off)
+    fun onOrOffString(context: Context, value: Int): String {
+        return if (value > 0) context.getString(R.string.on) else context.getString(R.string.off)
     }
 
     fun valueOfVolume(i: Int): Int {
@@ -365,12 +365,12 @@ object Statics {
         return shortStringOfSoundRange(soundRange) + " - " + shortStringOfSoundRange(soundRange + 11)
     }
 
-    fun stringOfSingleTime(t: Int, context: Context): String {
-        return "" + t / 1000.0f + context.getString(R.string.settings_attack_decay_release_time_seconds)
+    fun stringOfSingleTime(time: Int, context: Context): String {
+        return "" + time / 1000.0f + context.getString(R.string.settings_attack_decay_release_time_seconds)
     }
 
-    fun stringOfSustainLevel(s: Int, context: Context): String {
-        return "" + (s + 100) + context.getString(R.string.settings_sustain_level_percent)
+    fun stringOfPercentage(sustainLevel: Int, context: Context): String {
+        return "" + (sustainLevel + 100) + context.getString(R.string.settings_sustain_level_percent)
     }
 
     fun stringOfEnvelope(e: Int, a: Int, d: Int, s: Int, r: Int, context: Context): String {
