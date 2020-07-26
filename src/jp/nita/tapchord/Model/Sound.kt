@@ -4,7 +4,19 @@ import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
-import jp.nita.tapchord.Util.Statics
+import jp.nita.tapchord.Util.Statics.PREF_ATTACK_TIME
+import jp.nita.tapchord.Util.Statics.PREF_DECAY_TIME
+import jp.nita.tapchord.Util.Statics.PREF_ENABLE_ENVELOPE
+import jp.nita.tapchord.Util.Statics.PREF_RELEASE_TIME
+import jp.nita.tapchord.Util.Statics.PREF_SAMPLING_RATE
+import jp.nita.tapchord.Util.Statics.PREF_SOUND_RANGE
+import jp.nita.tapchord.Util.Statics.PREF_SUSTAIN_LEVEL
+import jp.nita.tapchord.Util.Statics.PREF_VOLUME
+import jp.nita.tapchord.Util.Statics.PREF_WAVEFORM
+import jp.nita.tapchord.Util.Statics.convertRawNotesToFrequencies
+import jp.nita.tapchord.Util.Statics.prefValue
+import jp.nita.tapchord.Util.Statics.valueOfSamplingRate
+import jp.nita.tapchord.Util.Statics.valueOfVolume
 import kotlin.math.exp
 import kotlin.math.floor
 import kotlin.math.sin
@@ -110,19 +122,19 @@ class Sound(var notesInRange: Array<Int>, cont: Context) {
     }
 
     fun updatePreferenceValues() {
-        mVolume = Statics.valueOfVolume(Statics.prefValue(mContext, Statics.PREF_VOLUME, 30))
-        mSoundRange = Statics.prefValue(mContext, Statics.PREF_SOUND_RANGE, 0)
-        mSampleRate = Statics.valueOfSamplingRate(Statics.prefValue(mContext, Statics.PREF_SAMPLING_RATE, 0))
-        mWaveForm = Statics.prefValue(mContext, Statics.PREF_WAVEFORM, 0)
-        mEnableEnvelope = Statics.prefValue(mContext, Statics.PREF_ENABLE_ENVELOPE, 0) > 0
+        mVolume = valueOfVolume(prefValue(mContext, PREF_VOLUME, 30))
+        mSoundRange = prefValue(mContext, PREF_SOUND_RANGE, 0)
+        mSampleRate = valueOfSamplingRate(prefValue(mContext, PREF_SAMPLING_RATE, 0))
+        mWaveForm = prefValue(mContext, PREF_WAVEFORM, 0)
+        mEnableEnvelope = prefValue(mContext, PREF_ENABLE_ENVELOPE, 0) > 0
     }
 
     fun updateEnvelopePrefValues() {
         if (mEnableEnvelope) {
-            mAttack = Statics.prefValue(mContext, Statics.PREF_ATTACK_TIME, 0)
-            mDecay = Statics.prefValue(mContext, Statics.PREF_DECAY_TIME, 0)
-            mSustain = Statics.prefValue(mContext, Statics.PREF_SUSTAIN_LEVEL, 0) + 100
-            mRelease = Statics.prefValue(mContext, Statics.PREF_RELEASE_TIME, 0)
+            mAttack = prefValue(mContext, PREF_ATTACK_TIME, 0)
+            mDecay = prefValue(mContext, PREF_DECAY_TIME, 0)
+            mSustain = prefValue(mContext, PREF_SUSTAIN_LEVEL, 0) + 100
+            mRelease = prefValue(mContext, PREF_RELEASE_TIME, 0)
 
             mAttackLength = mAttack * mSampleRate / 1000
             mDecayLength = mDecay * mSampleRate / 1000
@@ -284,7 +296,7 @@ class Sound(var notesInRange: Array<Int>, cont: Context) {
     }
 
     init {
-        mFrequencies = Statics.convertRawNotesToFrequencies(notesInRange)
+        mFrequencies = convertRawNotesToFrequencies(notesInRange)
         mContext = cont
         for (i in gaussianTable.indices) {
             gaussianTable[i] = gaussian(i - gaussianTable.size / 2.toDouble())

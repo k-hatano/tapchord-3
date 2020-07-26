@@ -10,9 +10,30 @@ import android.widget.*
 import android.widget.AdapterView.OnItemClickListener
 import android.widget.SeekBar.OnSeekBarChangeListener
 import jp.nita.tapchord.R
-import jp.nita.tapchord.Util.Statics
+import jp.nita.tapchord.Util.Statics.PREF_ANIMATION_QUALITY
+import jp.nita.tapchord.Util.Statics.PREF_ATTACK_TIME
+import jp.nita.tapchord.Util.Statics.PREF_DARKEN
+import jp.nita.tapchord.Util.Statics.PREF_DECAY_TIME
+import jp.nita.tapchord.Util.Statics.PREF_ENABLE_ENVELOPE
+import jp.nita.tapchord.Util.Statics.PREF_NEVER_SHOW_ALPHA_RELEASED
+import jp.nita.tapchord.Util.Statics.PREF_RELEASE_TIME
+import jp.nita.tapchord.Util.Statics.PREF_SAMPLING_RATE
+import jp.nita.tapchord.Util.Statics.PREF_SCALE
+import jp.nita.tapchord.Util.Statics.PREF_SOUND_RANGE
+import jp.nita.tapchord.Util.Statics.PREF_SUSTAIN_LEVEL
+import jp.nita.tapchord.Util.Statics.PREF_VIBRATION
+import jp.nita.tapchord.Util.Statics.PREF_VOLUME
+import jp.nita.tapchord.Util.Statics.PREF_WAVEFORM
+import jp.nita.tapchord.Util.Statics.longStringOfScale
+import jp.nita.tapchord.Util.Statics.onOrOffString
+import jp.nita.tapchord.Util.Statics.prefValue
+import jp.nita.tapchord.Util.Statics.setPrefValue
+import jp.nita.tapchord.Util.Statics.stringOfAnimationQuality
+import jp.nita.tapchord.Util.Statics.stringOfSoundRange
+import jp.nita.tapchord.Util.Statics.valueOfSamplingRate
+import jp.nita.tapchord.Util.Statics.valueOfVolume
+import jp.nita.tapchord.Util.Statics.valueOfWaveform
 import java.util.*
-import kotlin.collections.HashMap
 
 class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
     private var mDarken = 0
@@ -42,20 +63,20 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
     }
 
     fun updatePreferenceValues() {
-        mScale = Statics.prefValue(this, Statics.PREF_SCALE, 0)
-        mDarken = Statics.prefValue(this, Statics.PREF_DARKEN, 0)
-        mVibration = Statics.prefValue(this, Statics.PREF_VIBRATION, 1)
-        mVolume = Statics.prefValue(this, Statics.PREF_VOLUME, 30)
-        mSamplingRate = Statics.prefValue(this, Statics.PREF_SAMPLING_RATE, 0)
-        mWaveform = Statics.prefValue(this, Statics.PREF_WAVEFORM, 0)
-        mSoundRange = Statics.prefValue(this, Statics.PREF_SOUND_RANGE, 0)
-        mEnableEnvelope = Statics.prefValue(this, Statics.PREF_ENABLE_ENVELOPE, 0)
-        mAttackTime = Statics.prefValue(this, Statics.PREF_ATTACK_TIME, 0)
-        mDecayTime = Statics.prefValue(this, Statics.PREF_DECAY_TIME, 0)
-        mSustainTime = Statics.prefValue(this, Statics.PREF_SUSTAIN_LEVEL, 0)
-        mReleaseTime = Statics.prefValue(this, Statics.PREF_RELEASE_TIME, 0)
-        mAnimationQuality = Statics.prefValue(this, Statics.PREF_ANIMATION_QUALITY, 0)
-        mNeverShowAlphaReleased = Statics.prefValue(this, Statics.PREF_NEVER_SHOW_ALPHA_RELEASED, 0)
+        mScale = prefValue(this, PREF_SCALE, 0)
+        mDarken = prefValue(this, PREF_DARKEN, 0)
+        mVibration = prefValue(this, PREF_VIBRATION, 1)
+        mVolume = prefValue(this, PREF_VOLUME, 30)
+        mSamplingRate = prefValue(this, PREF_SAMPLING_RATE, 0)
+        mWaveform = prefValue(this, PREF_WAVEFORM, 0)
+        mSoundRange = prefValue(this, PREF_SOUND_RANGE, 0)
+        mEnableEnvelope = prefValue(this, PREF_ENABLE_ENVELOPE, 0)
+        mAttackTime = prefValue(this, PREF_ATTACK_TIME, 0)
+        mDecayTime = prefValue(this, PREF_DECAY_TIME, 0)
+        mSustainTime = prefValue(this, PREF_SUSTAIN_LEVEL, 0)
+        mReleaseTime = prefValue(this, PREF_RELEASE_TIME, 0)
+        mAnimationQuality = prefValue(this, PREF_ANIMATION_QUALITY, 0)
+        mNeverShowAlphaReleased = prefValue(this, PREF_NEVER_SHOW_ALPHA_RELEASED, 0)
     }
 
     fun updateSettingsListView() {
@@ -63,41 +84,30 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
         val list: MutableList<Map<String, String?>> = ArrayList()
         run {
             var map: MutableMap<String, String>
-            list.add(makeKeyValueHash(getString(R.string.settings_scale),
-                    Statics.longStringOfScale(mScale)))
-            list.add(makeKeyValueHash(getString(R.string.settings_darken),
-                    Statics.onOrOffString(this, mDarken)))
-            list.add(makeKeyValueHash(getString(R.string.settings_vibration),
-                    Statics.onOrOffString(this, mVibration)))
-            list.add(makeKeyValueHash(getString(R.string.settings_volume),
-                    "" + Statics.valueOfVolume(mVolume)))
-            list.add(makeKeyValueHash(getString(R.string.settings_sound_range),
-                    Statics.stringOfSoundRange(mSoundRange)))
-            list.add(makeKeyValueHash(getString(R.string.settings_waveform),
-                    Statics.valueOfWaveform(mWaveform, this)))
+            list.add(keyValueHash(R.string.settings_scale, longStringOfScale(mScale)))
+            list.add(keyValueHash(R.string.settings_darken, onOrOffString(this, mDarken)))
+            list.add(keyValueHash(R.string.settings_vibration, onOrOffString(this, mVibration)))
+            list.add(keyValueHash(R.string.settings_volume, "" + valueOfVolume(mVolume)))
+            list.add(keyValueHash(R.string.settings_sound_range, stringOfSoundRange(mSoundRange)))
+            list.add(keyValueHash(R.string.settings_waveform, valueOfWaveform(mWaveform, this)))
 
             /*
              * map=new HashMap<String,String>(); map.put("key",
              * getString(R.string.settings_envelope)); map.put("value",
-             * ""+Statics.getStringOfEnvelope(enableEnvelope,attackTime,
+             * ""+getStringOfEnvelope(enableEnvelope,attackTime,
              * decayTime,sustainLevel,releaseTime,this)); list.add(map);
              */
 
-            list.add(makeKeyValueHash(getString(R.string.settings_sampling_rate),
-                    ("" + Statics.valueOfSamplingRate(mSamplingRate) + " " + getString(R.string.settings_sampling_rate_hz))))
-            list.add(makeKeyValueHash(getString(R.string.settings_animation_quality),
-                    Statics.stringOfAnimationQuality(mAnimationQuality, this)))
+            list.add(keyValueHash(R.string.settings_sampling_rate, ("" + valueOfSamplingRate(mSamplingRate) + " " + getString(R.string.settings_sampling_rate_hz))))
+            list.add(keyValueHash(R.string.settings_animation_quality, stringOfAnimationQuality(mAnimationQuality, this)))
         }
         val adapter = SimpleAdapter(this, list, android.R.layout.simple_expandable_list_item_2, arrayOf("key", "value"), intArrayOf(android.R.id.text1, android.R.id.text2))
         items.adapter = adapter
         items.onItemClickListener = this
     }
 
-    fun makeKeyValueHash(key: String, value: String): MutableMap<String, String> {
-        var map = HashMap<String, String>()
-        map["key"] = key
-        map["value"] = value
-        return map
+    private fun keyValueHash(keyId: Int, value: String): Map<String, String> {
+        return mapOf("key" to getString(keyId), "value" to value)
     }
 
     public override fun onResume() {
@@ -133,7 +143,7 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
                 val list: Array<String?> = arrayOfNulls<String>(15)
                 var i = -7
                 while (i <= 7) {
-                    list[i + 7] = Statics.longStringOfScale(i)
+                    list[i + 7] = longStringOfScale(i)
                     i++
                 }
                 AlertDialog.Builder(this@SettingsActivity).setTitle(getString(R.string.settings_scale))
@@ -144,9 +154,7 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
                         }.show()
             }
             1 -> {
-                val list: Array<String?> = arrayOfNulls<String>(2)
-                list[0] = getString(R.string.off)
-                list[1] = getString(R.string.on)
+                val list: Array<String?> = arrayOf(getString(R.string.off), getString(R.string.on))
                 AlertDialog.Builder(this@SettingsActivity).setTitle(getString(R.string.settings_darken))
                         .setSingleChoiceItems(list, mDarken) { dialog, which ->
                             if (which != mDarken) {
@@ -158,9 +166,7 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
                         }.show()
             }
             2 -> {
-                val list: Array<String?> = arrayOfNulls<String>(2)
-                list[0] = getString(R.string.off)
-                list[1] = getString(R.string.on)
+                val list: Array<String?> = arrayOf(getString(R.string.off), getString(R.string.on))
                 AlertDialog.Builder(this@SettingsActivity).setTitle(getString(R.string.settings_vibration))
                         .setSingleChoiceItems(list, mVibration) { dialog, which ->
                             setVibration(which)
@@ -197,14 +203,14 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
             }
             4 -> {
                 val rangeView = TextView(this)
-                rangeView.text = "" + Statics.stringOfSoundRange(mSoundRange)
+                rangeView.text = "" + stringOfSoundRange(mSoundRange)
                 rangeView.setTextAppearance(this, android.R.style.TextAppearance_Inverse)
                 val seekBar = SeekBar(this)
                 seekBar.progress = mSoundRange + 24
                 seekBar.max = 48
                 seekBar.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
                     override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                        rangeView.text = "" + Statics.stringOfSoundRange(seekBar.progress - 24)
+                        rangeView.text = "" + stringOfSoundRange(seekBar.progress - 24)
                     }
 
                     override fun onStartTrackingTouch(seekBar: SeekBar) {}
@@ -225,7 +231,7 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
                 val list: Array<String?> = arrayOfNulls<String>(7)
                 var i = 0
                 while (i < list.size) {
-                    list[i] = Statics.valueOfWaveform(i, this)
+                    list[i] = valueOfWaveform(i, this)
                     i++
                 }
                 AlertDialog.Builder(this@SettingsActivity).setTitle(getString(R.string.settings_waveform))
@@ -239,7 +245,7 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
                 val list: Array<String?> = arrayOfNulls<String>(4)
                 var i = 0
                 while (i < 4) {
-                    list[i] = ("" + Statics.valueOfSamplingRate(i - 3) + " "
+                    list[i] = ("" + valueOfSamplingRate(i - 3) + " "
                             + getString(R.string.settings_sampling_rate_hz))
                     i++
                 }
@@ -254,7 +260,7 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
                 val list: Array<String?> = arrayOfNulls<String>(3)
                 var i = 0
                 while (i < 3) {
-                    list[i] = "" + Statics.stringOfAnimationQuality(i - 1, this@SettingsActivity)
+                    list[i] = "" + stringOfAnimationQuality(i - 1, this@SettingsActivity)
                     i++
                 }
                 AlertDialog.Builder(this@SettingsActivity).setTitle(getString(R.string.settings_animation_quality))
@@ -271,91 +277,91 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
 
     fun setScale(scale: Int) {
         mScale = scale
-        Statics.setPrefValue(this, Statics.PREF_SCALE, mScale)
+        setPrefValue(this, PREF_SCALE, mScale)
         updatePreferenceValues()
         updateSettingsListView()
     }
 
     fun setDarken(darken: Int) {
         mDarken = darken
-        Statics.setPrefValue(this, Statics.PREF_DARKEN, mDarken)
+        setPrefValue(this, PREF_DARKEN, mDarken)
         updatePreferenceValues()
         updateSettingsListView()
     }
 
     fun setVibration(vibration: Int) {
         mVibration = vibration
-        Statics.setPrefValue(this, Statics.PREF_VIBRATION, mVibration)
+        setPrefValue(this, PREF_VIBRATION, mVibration)
         updatePreferenceValues()
         updateSettingsListView()
     }
 
     fun setSamplingRate(samplingRate: Int) {
         mSamplingRate = samplingRate
-        Statics.setPrefValue(this, Statics.PREF_SAMPLING_RATE, mSamplingRate)
+        setPrefValue(this, PREF_SAMPLING_RATE, mSamplingRate)
         updatePreferenceValues()
         updateSettingsListView()
     }
 
     fun setVolume(volume: Int) {
         mVolume = volume
-        Statics.setPrefValue(this, Statics.PREF_VOLUME, mVolume)
+        setPrefValue(this, PREF_VOLUME, mVolume)
         updatePreferenceValues()
         updateSettingsListView()
     }
 
     fun setSoundRange(soundRange: Int) {
         mSoundRange = soundRange
-        Statics.setPrefValue(this, Statics.PREF_SOUND_RANGE, soundRange)
+        setPrefValue(this, PREF_SOUND_RANGE, soundRange)
         updatePreferenceValues()
         updateSettingsListView()
     }
 
     fun setAttackTime(attackTime: Int) {
         mAttackTime = attackTime
-        Statics.setPrefValue(this, Statics.PREF_ATTACK_TIME, attackTime)
+        setPrefValue(this, PREF_ATTACK_TIME, attackTime)
         updatePreferenceValues()
         updateSettingsListView()
     }
 
     fun setDecayTime(decayTime: Int) {
         mDecayTime = decayTime
-        Statics.setPrefValue(this, Statics.PREF_DECAY_TIME, decayTime)
+        setPrefValue(this, PREF_DECAY_TIME, decayTime)
         updatePreferenceValues()
         updateSettingsListView()
     }
 
     fun setSustainLevel(sustainLevel: Int) {
         mSustainTime = sustainLevel
-        Statics.setPrefValue(this, Statics.PREF_SUSTAIN_LEVEL, sustainLevel - 100)
+        setPrefValue(this, PREF_SUSTAIN_LEVEL, sustainLevel - 100)
         updatePreferenceValues()
         updateSettingsListView()
     }
 
     fun setReleaseTime(releaseTime: Int) {
         mReleaseTime = releaseTime
-        Statics.setPrefValue(this, Statics.PREF_RELEASE_TIME, releaseTime)
+        setPrefValue(this, PREF_RELEASE_TIME, releaseTime)
         updatePreferenceValues()
         updateSettingsListView()
     }
 
     fun setWaveform(waveform: Int) {
         mWaveform = waveform
-        Statics.setPrefValue(this, Statics.PREF_WAVEFORM, mWaveform)
+        setPrefValue(this, PREF_WAVEFORM, mWaveform)
         updatePreferenceValues()
         updateSettingsListView()
     }
 
     fun setEnableEnvelope(enableEnvelope: Int) {
         mEnableEnvelope = enableEnvelope
-        Statics.setPrefValue(this, Statics.PREF_ENABLE_ENVELOPE, mEnableEnvelope)
+        setPrefValue(this, PREF_ENABLE_ENVELOPE, mEnableEnvelope)
         updatePreferenceValues()
         updateSettingsListView()
     }
 
     fun setAnimationQuality(animationQuality: Int) {
         mAnimationQuality = animationQuality
-        Statics.setPrefValue(this, Statics.PREF_ANIMATION_QUALITY, mAnimationQuality)
+        setPrefValue(this, PREF_ANIMATION_QUALITY, mAnimationQuality)
         MainActivity.setAnimationQuality(animationQuality)
         updatePreferenceValues()
         updateSettingsListView()
@@ -363,7 +369,7 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
 
     fun setNeverShowAlphaReleased(neverShowAlphaReleased: Int) {
         mNeverShowAlphaReleased = neverShowAlphaReleased
-        Statics.setPrefValue(this, Statics.PREF_NEVER_SHOW_ALPHA_RELEASED, mNeverShowAlphaReleased)
+        setPrefValue(this, PREF_NEVER_SHOW_ALPHA_RELEASED, mNeverShowAlphaReleased)
         updatePreferenceValues()
         updateSettingsListView()
     }

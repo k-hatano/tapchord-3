@@ -77,105 +77,64 @@ object Statics {
     val TENSIONS = arrayOf("add9", "-5/aug", "7", "M7")
 
     @JvmStatic
-    fun color(which: COLOR, pressed: Int, dark: Boolean): Int {
-        var red: Int
-        var green: Int
-        var blue: Int
+    public fun color(which: COLOR, pressed: Int, dark: Boolean): Int {
+        var color: Triple<Int, Int, Int>
         if (!dark) {
-            when (which) {
-                COLOR.BLACK -> {
-                    red = 0x00; green = 0x00; blue = 0x00
-                }
-                COLOR.DARKGRAY -> {
-                    red = 0x40; green = 0x40; blue = 0x40
-                }
-                COLOR.GRAY -> {
-                    red = 0x80; green = 0x80; blue = 0x80
-                }
-                COLOR.PASTELGRAY -> {
-                    red = 0xF8; green = 0xF8; blue = 0xF8
-                }
-                COLOR.LIGHTGRAY -> {
-                    red = 0xE0; green = 0xE0; blue = 0xE0
-                }
-                COLOR.ABSOLUTE_LIGHT -> {
-                    red = 0xFF; green = 0xFF; blue = 0xFF
-                }
-                COLOR.RED -> {
-                    red = 0xFF; green = 0xA0; blue = 0xE0
-                }
-                COLOR.YELLOW -> {
-                    red = 0xFF; green = 0xFF; blue = 0x70
-                }
-                COLOR.GREEN -> {
-                    red = 0xA0; green = 0xFF; blue = 0xA0
-                }
-                COLOR.BLUE -> {
-                    red = 0xA0; green = 0xE0; blue = 0xFF
-                }
-                COLOR.ORANGE -> {
-                    red = 0xFF; green = 0xC0; blue = 0x80
-                }
-                COLOR.PURPLE -> {
-                    red = 0xC0; green = 0xC0; blue = 0xFF
-                }
-                else -> {
-                    red = 0xFF; green = 0xFF; blue = 0xFF
-                }
+            color = when (which) {
+                COLOR.BLACK -> Triple(0x00, 0x00, 0x00)
+                COLOR.DARKGRAY -> Triple(0x40, 0x40, 0x40)
+                COLOR.GRAY -> Triple(0x80, 0x80, 0x80)
+                COLOR.PASTELGRAY -> Triple(0xF8, 0xF8, 0xF8)
+                COLOR.LIGHTGRAY -> Triple(0xE0, 0xE0, 0xE0)
+                COLOR.ABSOLUTE_LIGHT -> Triple(0xFF, 0xFF, 0xFF)
+                COLOR.RED -> Triple(0xFF, 0xA0, 0xE0)
+                COLOR.YELLOW -> Triple(0xFF, 0xFF, 0x70)
+                COLOR.GREEN -> Triple(0xA0, 0xFF, 0xA0)
+                COLOR.BLUE -> Triple(0xA0, 0xE0, 0xFF)
+                COLOR.ORANGE -> Triple(0xFF, 0xC0, 0x80)
+                COLOR.PURPLE -> Triple(0xC0, 0xC0, 0xFF)
+                else -> Triple(0xFF, 0xFF, 0xFF)
             }
-            when (pressed) {
-                1 -> {
-                    red /= 2; green /= 2; blue /= 2
-                }
-                -1 -> {
-                    red = 256 - (256 - red) / 2; green = 256 - (256 - green) / 2; blue = 256 - (256 - blue) / 2
-                }
-                else -> {
-                }
+
+            if (pressed == 1) {
+                color = Triple(color.first / 2, color.second / 2, color.third / 2)
+            }
+            if (pressed == -1) {
+                color = Triple(256 - (256 - color.first) / 2, 256 - (256 - color.second) / 2, 256 - (256 - color.third) / 2)
             }
         } else {
-            when (which) {
-                COLOR.BLACK -> {
-                    red = 0; green = 80; blue = 80
-                }
-                COLOR.DARKGRAY -> {
-                    red = 0; green = 48; blue = 48
-                }
-                COLOR.GRAY -> {
-                    red = 0; green = 32; blue = 32
-                }
-                COLOR.PASTELGRAY -> {
-                    red = 0; green = 16; blue = 16
-                }
-                COLOR.LIGHTGRAY -> {
-                    red = 0; green = 8; blue = 8
-                }
-                COLOR.ABSOLUTE_LIGHT -> {
-                    red = 0; green = 64; blue = 64
-                }
-                COLOR.RED, COLOR.YELLOW, COLOR.GREEN, COLOR.BLUE, COLOR.ORANGE, COLOR.PURPLE -> {
-                    red = 0; green = 32; blue = 32
-                }
-                else -> {
-                    red = 0; green = 0; blue = 0
-                }
+            color = when (which) {
+                COLOR.BLACK -> Triple(0, 80, 80)
+                COLOR.DARKGRAY -> Triple(0, 48, 48)
+                COLOR.GRAY -> Triple(0, 32, 32)
+                COLOR.PASTELGRAY -> Triple(0, 16, 16)
+                COLOR.LIGHTGRAY -> Triple(0, 8, 8)
+                COLOR.ABSOLUTE_LIGHT -> Triple(0, 64, 64)
+                COLOR.RED, COLOR.YELLOW, COLOR.GREEN, COLOR.BLUE, COLOR.ORANGE, COLOR.PURPLE -> Triple(0, 32, 32)
+                else -> Triple(0, 0, 0)
             }
-            when (pressed) {
-                -1 -> {
-                    green /= 2; blue /= 2
-                }
-                1 -> {
-                    red = 128 - (128 - red) / 2; green = 128 - (128 - green) / 2; blue = 128 - (128 - blue) / 2
-                }
-                else -> {
-                }
+
+            if (pressed == 1) {
+                color = Triple(color.first, color.second / 2, color.third / 2)
+            }
+            if (pressed == -1) {
+                color = Triple(128 - (128 - color.first) / 2, 128 - (128 - color.second) / 2, 128 - (128 - color.third) / 2)
             }
         }
-        if (red > 255) red = 255
-        if (green > 255) green = 255
-        if (blue > 255) blue = 255
+
         if (which == COLOR.ABSOLUTE_CYAN) {
-            red = 32; green = 196; blue = 196
+            color = Triple(32, 196, 196)
+        }
+
+        var (red, green, blue) = color
+        if (red > 255) {
+            red = 255
+        }
+        if (green > 255) {
+            green = 255
+        }
+        if (blue > 255) {
+            blue = 255
         }
         return Color.argb(255, red, green, blue)
     }
