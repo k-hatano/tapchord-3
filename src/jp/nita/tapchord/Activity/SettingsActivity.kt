@@ -1,7 +1,6 @@
 package jp.nita.tapchord.Activity
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -10,29 +9,30 @@ import android.widget.*
 import android.widget.AdapterView.OnItemClickListener
 import android.widget.SeekBar.OnSeekBarChangeListener
 import jp.nita.tapchord.R
-import jp.nita.tapchord.Util.Statics.PREF_ANIMATION_QUALITY
-import jp.nita.tapchord.Util.Statics.PREF_ATTACK_TIME
-import jp.nita.tapchord.Util.Statics.PREF_DARKEN
-import jp.nita.tapchord.Util.Statics.PREF_DECAY_TIME
-import jp.nita.tapchord.Util.Statics.PREF_ENABLE_ENVELOPE
-import jp.nita.tapchord.Util.Statics.PREF_NEVER_SHOW_ALPHA_RELEASED
-import jp.nita.tapchord.Util.Statics.PREF_RELEASE_TIME
-import jp.nita.tapchord.Util.Statics.PREF_SAMPLING_RATE
-import jp.nita.tapchord.Util.Statics.PREF_SCALE
-import jp.nita.tapchord.Util.Statics.PREF_SOUND_RANGE
-import jp.nita.tapchord.Util.Statics.PREF_SUSTAIN_LEVEL
-import jp.nita.tapchord.Util.Statics.PREF_VIBRATION
-import jp.nita.tapchord.Util.Statics.PREF_VOLUME
-import jp.nita.tapchord.Util.Statics.PREF_WAVEFORM
-import jp.nita.tapchord.Util.Statics.longStringOfScale
-import jp.nita.tapchord.Util.Statics.onOrOffString
-import jp.nita.tapchord.Util.Statics.prefValue
-import jp.nita.tapchord.Util.Statics.setPrefValue
-import jp.nita.tapchord.Util.Statics.stringOfAnimationQuality
-import jp.nita.tapchord.Util.Statics.stringOfSoundRange
-import jp.nita.tapchord.Util.Statics.valueOfSamplingRate
-import jp.nita.tapchord.Util.Statics.valueOfVolume
-import jp.nita.tapchord.Util.Statics.valueOfWaveform
+import jp.nita.tapchord.Util.Dialogs.dialogBuilder
+import jp.nita.tapchord.Util.PREF_ANIMATION_QUALITY
+import jp.nita.tapchord.Util.PREF_ATTACK_TIME
+import jp.nita.tapchord.Util.PREF_DARKEN
+import jp.nita.tapchord.Util.PREF_DECAY_TIME
+import jp.nita.tapchord.Util.PREF_ENABLE_ENVELOPE
+import jp.nita.tapchord.Util.PREF_NEVER_SHOW_ALPHA_RELEASED
+import jp.nita.tapchord.Util.PREF_RELEASE_TIME
+import jp.nita.tapchord.Util.PREF_SAMPLING_RATE
+import jp.nita.tapchord.Util.PREF_SCALE
+import jp.nita.tapchord.Util.PREF_SOUND_RANGE
+import jp.nita.tapchord.Util.PREF_SUSTAIN_LEVEL
+import jp.nita.tapchord.Util.PREF_VIBRATION
+import jp.nita.tapchord.Util.PREF_VOLUME
+import jp.nita.tapchord.Util.PREF_WAVEFORM
+import jp.nita.tapchord.Util.longStringOfScale
+import jp.nita.tapchord.Util.onOrOffString
+import jp.nita.tapchord.Util.prefValue
+import jp.nita.tapchord.Util.setPrefValue
+import jp.nita.tapchord.Util.stringOfAnimationQuality
+import jp.nita.tapchord.Util.stringOfSoundRange
+import jp.nita.tapchord.Util.valueOfSamplingRate
+import jp.nita.tapchord.Util.valueOfVolume
+import jp.nita.tapchord.Util.valueOfWaveform
 import java.util.*
 
 class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
@@ -137,6 +137,7 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
     }
 
     override fun onItemClick(adapterView: AdapterView<*>, view: View, which: Int, arg3: Long) {
+        val finalSettingsItems = findViewById(R.id.settings_items) as ListView
         mPosition = adapterView.firstVisiblePosition
         when (which) {
             0 -> {
@@ -146,32 +147,34 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
                     list[i + 7] = longStringOfScale(i)
                     i++
                 }
-                AlertDialog.Builder(this@SettingsActivity).setTitle(getString(R.string.settings_scale))
+                dialogBuilder(this, R.string.settings_scale)
                         .setSingleChoiceItems(list, mScale + 7) { dialog, which ->
                             setScale(which - 7)
                             dialog.dismiss()
-                            (findViewById(R.id.settings_items) as ListView).setSelection(mPosition)
+                            finalSettingsItems.setSelection(mPosition)
                         }.show()
             }
             1 -> {
                 val list: Array<String?> = arrayOf(getString(R.string.off), getString(R.string.on))
-                AlertDialog.Builder(this@SettingsActivity).setTitle(getString(R.string.settings_darken))
+
+                dialogBuilder(this, R.string.settings_darken)
                         .setSingleChoiceItems(list, mDarken) { dialog, which ->
                             if (which != mDarken) {
                                 setDarken(which)
                                 finish()
                             }
                             dialog.dismiss()
-                            (findViewById(R.id.settings_items) as ListView).setSelection(mPosition)
+                            finalSettingsItems.setSelection(mPosition)
                         }.show()
             }
             2 -> {
                 val list: Array<String?> = arrayOf(getString(R.string.off), getString(R.string.on))
-                AlertDialog.Builder(this@SettingsActivity).setTitle(getString(R.string.settings_vibration))
+
+                dialogBuilder(this, R.string.settings_vibration)
                         .setSingleChoiceItems(list, mVibration) { dialog, which ->
                             setVibration(which)
                             dialog.dismiss()
-                            (findViewById(R.id.settings_items) as ListView).setSelection(mPosition)
+                            finalSettingsItems.setSelection(mPosition)
                         }.show()
             }
             3 -> {
@@ -179,6 +182,7 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
                 val volumeView = TextView(this)
                 volumeView.text = "" + vol
                 volumeView.setTextAppearance(this, android.R.style.TextAppearance_Inverse)
+
                 val seekBar = SeekBar(this)
                 seekBar.progress = vol
                 seekBar.max = 100
@@ -190,21 +194,24 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
                     override fun onStartTrackingTouch(seekBar: SeekBar) {}
                     override fun onStopTrackingTouch(seekBar: SeekBar) {}
                 })
+
                 val layout = LinearLayout(this)
                 layout.orientation = LinearLayout.VERTICAL
                 layout.addView(volumeView)
                 layout.addView(seekBar)
                 layout.setPadding(8, 8, 8, 8)
-                AlertDialog.Builder(this@SettingsActivity).setTitle(getString(R.string.settings_volume)).setView(layout)
+
+                dialogBuilder(this, R.string.settings_volume)
                         .setPositiveButton(getString(R.string.ok)) { dialog, which ->
                             setVolume(seekBar.progress - 50)
-                            (findViewById(R.id.settings_items) as ListView).setSelection(mPosition)
-                        }.setNegativeButton(getString(R.string.cancel)) { dialog, which -> (findViewById(R.id.settings_items) as ListView).setSelection(mPosition) }.show()
+                            finalSettingsItems.setSelection(mPosition)
+                        }.setNegativeButton(getString(R.string.cancel)) { dialog, which -> finalSettingsItems.setSelection(mPosition) }.show()
             }
             4 -> {
                 val rangeView = TextView(this)
                 rangeView.text = "" + stringOfSoundRange(mSoundRange)
                 rangeView.setTextAppearance(this, android.R.style.TextAppearance_Inverse)
+
                 val seekBar = SeekBar(this)
                 seekBar.progress = mSoundRange + 24
                 seekBar.max = 48
@@ -216,16 +223,18 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
                     override fun onStartTrackingTouch(seekBar: SeekBar) {}
                     override fun onStopTrackingTouch(seekBar: SeekBar) {}
                 })
+
                 val layout = LinearLayout(this)
                 layout.orientation = LinearLayout.VERTICAL
                 layout.addView(rangeView)
                 layout.addView(seekBar)
                 layout.setPadding(8, 8, 8, 8)
-                AlertDialog.Builder(this@SettingsActivity).setTitle(getString(R.string.settings_sound_range))
+
+                dialogBuilder(this, R.string.settings_sound_range)
                         .setView(layout).setPositiveButton(getString(R.string.ok)) { dialog, which ->
                             setSoundRange(seekBar.progress - 24)
-                            (findViewById(R.id.settings_items) as ListView).setSelection(mPosition)
-                        }.setNegativeButton(getString(R.string.cancel)) { dialog, which -> (findViewById(R.id.settings_items) as ListView).setSelection(mPosition) }.show()
+                            finalSettingsItems.setSelection(mPosition)
+                        }.setNegativeButton(getString(R.string.cancel)) { dialog, which -> finalSettingsItems.setSelection(mPosition) }.show()
             }
             5 -> {
                 val list: Array<String?> = arrayOfNulls<String>(7)
@@ -234,11 +243,12 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
                     list[i] = valueOfWaveform(i, this)
                     i++
                 }
-                AlertDialog.Builder(this@SettingsActivity).setTitle(getString(R.string.settings_waveform))
+
+                dialogBuilder(this, R.string.settings_waveform)
                         .setSingleChoiceItems(list, mWaveform) { dialog, which ->
                             setWaveform(which)
                             dialog.dismiss()
-                            (findViewById(R.id.settings_items) as ListView).setSelection(mPosition)
+                            finalSettingsItems.setSelection(mPosition)
                         }.show()
             }
             6 -> {
@@ -249,11 +259,11 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
                             + getString(R.string.settings_sampling_rate_hz))
                     i++
                 }
-                AlertDialog.Builder(this@SettingsActivity).setTitle(getString(R.string.settings_sampling_rate))
+                dialogBuilder(this, R.string.settings_sampling_rate)
                         .setSingleChoiceItems(list, mSamplingRate + 3) { dialog, which ->
                             setSamplingRate(which - 3)
                             dialog.dismiss()
-                            (findViewById(R.id.settings_items) as ListView).setSelection(mPosition)
+                            finalSettingsItems.setSelection(mPosition)
                         }.show()
             }
             7 -> {
@@ -263,11 +273,11 @@ class SettingsActivity : Activity(), View.OnClickListener, OnItemClickListener {
                     list[i] = "" + stringOfAnimationQuality(i - 1, this@SettingsActivity)
                     i++
                 }
-                AlertDialog.Builder(this@SettingsActivity).setTitle(getString(R.string.settings_animation_quality))
+                dialogBuilder(this, R.string.settings_animation_quality)
                         .setSingleChoiceItems(list, mAnimationQuality + 1) { dialog, which ->
                             setAnimationQuality(which - 1)
                             dialog.dismiss()
-                            (findViewById(R.id.settings_items) as ListView).setSelection(mPosition)
+                            finalSettingsItems.setSelection(mPosition)
                         }.show()
             }
             else -> {

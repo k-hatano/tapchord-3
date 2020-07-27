@@ -1,21 +1,18 @@
 package jp.nita.tapchord.Activity
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.content.Intent
 import android.media.AudioManager
-import android.net.Uri
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
-import android.view.WindowManager
-import android.widget.*
-import android.widget.ImageView.ScaleType
 import jp.nita.tapchord.R
-import jp.nita.tapchord.Util.Statics
+import jp.nita.tapchord.Util.Dialogs.dialogBuilder
+import jp.nita.tapchord.Util.PREF_ANIMATION_QUALITY
+import jp.nita.tapchord.Util.PREF_NEVER_SHOW_ALPHA_RELEASED
+import jp.nita.tapchord.Util.prefValue
 import jp.nita.tapchord.View.TapChordView
-import java.util.*
 
 class MainActivity : Activity() {
     var mNeverShowAlphaReleased = 0
@@ -55,8 +52,7 @@ class MainActivity : Activity() {
                 return true
             }
             R.id.action_quit -> {
-                AlertDialog.Builder(this).setTitle(getString(R.string.action_quit))
-                        .setMessage(getString(R.string.message_quit))
+                dialogBuilder(this, R.string.action_quit, R.string.message_quit)
                         .setPositiveButton(getString(R.string.ok)) { dialog, which -> finish() }
                         .setNegativeButton(getString(R.string.cancel)) { dialog, which -> }
                         .show()
@@ -95,16 +91,17 @@ class MainActivity : Activity() {
     }
 
     fun updatePreferences() {
-        val animationQuality = Statics.prefValue(this, Statics.PREF_ANIMATION_QUALITY, 0)
+        val animationQuality = prefValue(this, PREF_ANIMATION_QUALITY, 0)
         setAnimationQuality(animationQuality)
-        mNeverShowAlphaReleased = Statics.prefValue(this, Statics.PREF_NEVER_SHOW_ALPHA_RELEASED, 0)
+        mNeverShowAlphaReleased = prefValue(this, PREF_NEVER_SHOW_ALPHA_RELEASED, 0)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
-            AlertDialog.Builder(this).setTitle(getString(R.string.action_quit))
-                    .setMessage(getString(R.string.message_quit))
-                    .setPositiveButton(getString(R.string.ok)) { dialog, which -> finish() }.setNegativeButton(getString(R.string.cancel)) { dialog, which -> }.show()
+            dialogBuilder(this, R.string.action_quit, R.string.message_quit)
+                    .setPositiveButton(getString(R.string.ok)) { dialog, which -> finish() }
+                    .setNegativeButton(getString(R.string.cancel)) { dialog, which -> }.show()
+
             // } else if (keyCode == KeyEvent.KEYCODE_CAMERA || keyCode ==
             // KeyEvent.KEYCODE_BACKSLASH) {
             // TapChordView.debugMode = !TapChordView.debugMode;
@@ -116,7 +113,7 @@ class MainActivity : Activity() {
                 return super.onKeyDown(keyCode, event)
             }
         }
-        return super.onKeyDown(keyCode, event)
+        return false
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
